@@ -14,7 +14,7 @@ docker compose up -d
 
 
 ## Submission Info
-- Repository: https://github.com/<your-username>/<your-repo>
+- Repository: https://github.com/VladaCode/bad-server
 - Student: <your-name>
 - Cohort: <your-cohort>
 - Course: Backend
