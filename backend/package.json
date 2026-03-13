@@ -7,7 +7,7 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier ./src --write",
     "build": "tsc",
-    "dev": "npx nodemon -L src/app.ts",
+    "dev": "ts-node-dev --poll --respawn src/app.ts",
     "start": "ts-node src/app.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
