@@ -53,12 +53,42 @@ class Api {
                   )
     }
 
+    private isMutatingRequest(method = 'GET') {
+        return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
+            method.toUpperCase()
+        )
+    }
+
+    private async getCsrfToken() {
+        const response = await fetch(`${this.baseUrl}/auth/csrf-token`, {
+            method: 'GET',
+            credentials: 'include',
+        })
+
+        const data = await this.handleResponse<{ csrfToken: string }>(response)
+        return data.csrfToken
+    }
+
     protected async request<T>(endpoint: string, options: RequestInit) {
         try {
-            const res = await fetch(`${this.baseUrl}${endpoint}`, {
+            const method = (options.method || 'GET').toUpperCase()
+            const headers = {
+                ...((this.options.headers as object) ?? {}),
+                ...((options.headers as object) ?? {}),
+            } as Record<string, string>
+
+            const requestOptions: RequestInit = {
                 ...this.options,
                 ...options,
-            })
+                headers,
+            }
+
+            if (this.isMutatingRequest(method)) {
+                headers['X-CSRF-Token'] = await this.getCsrfToken()
+                requestOptions.credentials = 'include'
+            }
+
+            const res = await fetch(`${this.baseUrl}${endpoint}`, requestOptions)
             return await this.handleResponse<T>(res)
         } catch (error) {
             return Promise.reject(error)
@@ -94,7 +124,6 @@ class Api {
         }
     }
 }
-
 export interface IWebLarekAPI {
     getProductList: (
         filters: Record<string, unknown>
@@ -357,3 +386,4 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
 }
 
 export default new WebLarekAPI(CDN_URL, API_URL)
+

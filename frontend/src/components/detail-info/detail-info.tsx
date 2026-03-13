@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import React from 'react'
 import styles from './detail-info.module.scss'
 export interface DataItem {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     [key: string]: any
 }
 
@@ -10,7 +10,7 @@ interface Header {
     key: string
     label: string
     extraClass?: string
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     render?: (data: any) => JSX.Element
 }
 

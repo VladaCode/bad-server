@@ -20,7 +20,7 @@ interface FilterSelectedState {
 }
 interface FilterComponentProps {
     fields: Field[]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     onFilter: (filters: Record<string, any>) => void
     onClear: () => void
     defaultValue?: FiltersOrder | FiltersCustomers

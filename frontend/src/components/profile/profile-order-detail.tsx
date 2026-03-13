@@ -21,7 +21,6 @@ export default function ProfileOrderDetail() {
     const number = useParams().number || ''
     const dispatch = useDispatch()
     const orderData = useSelector(selectOrderByNumber(+number))
-    console.log(orderData)
 
     useEffect(() => {
         if (!orderData) {
@@ -69,17 +68,7 @@ export default function ProfileOrderDetail() {
                 label: 'Ваш комментарий к заказу',
                 extraClass: styles.profile__gridRowFullWidth,
                 render: (dataInfo: OrderData) => (
-                    <>
-                        {dataInfo.comment ? (
-                            <div
-                                dangerouslySetInnerHTML={{
-                                    __html: dataInfo.comment,
-                                }}
-                            />
-                        ) : (
-                            'Комментариев нет'
-                        )}
-                    </>
+                    <span>{dataInfo.comment || 'Комментариев нет'}</span>
                 ),
             },
         ],

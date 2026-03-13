@@ -12,3 +12,10 @@ docker compose up -d
 5. На странице http://localhost/login/ можно авторизоваться.
 6. Админка находится по адресу http://localhost/admin/
 
+
+## Submission Info
+- Repository: https://github.com/<your-username>/<your-repo>
+- Student: <your-name>
+- Cohort: <your-cohort>
+- Course: Backend
+- Deploy URL (optional): <https://... or "not published">

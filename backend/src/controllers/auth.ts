@@ -9,8 +9,8 @@ import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import UnauthorizedError from '../errors/unauthorized-error'
 import User from '../models/user'
+import { sanitizePlainText } from '../utils/sanitizers'
 
-// POST /auth/login
 const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password } = req.body
@@ -32,10 +32,12 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
-// POST /auth/register
 const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { email, password, name } = req.body
+        const { password } = req.body
+        const email = typeof req.body.email === 'string' ? req.body.email.trim() : ''
+        const name = sanitizePlainText(req.body.name, 30)
+
         const newUser = new User({ email, password, name })
         await newUser.save()
         const accessToken = newUser.generateAccessToken()
@@ -56,15 +58,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
             return next(new BadRequestError(error.message))
         }
         if (error instanceof Error && error.message.includes('E11000')) {
-            return next(
-                new ConflictError('Пользователь с таким email уже существует')
-            )
+            return next(new ConflictError('User with this email already exists'))
         }
         return next(error)
     }
 }
 
-// GET /auth/user
 const getCurrentUser = async (
     _req: Request,
     res: Response,
@@ -73,10 +72,7 @@ const getCurrentUser = async (
     try {
         const userId = res.locals.user._id
         const user = await User.findById(userId).orFail(
-            () =>
-                new NotFoundError(
-                    'Пользователь по заданному id отсутствует в базе'
-                )
+            () => new NotFoundError('User not found')
         )
         res.json({ user, success: true })
     } catch (error) {
@@ -84,7 +80,6 @@ const getCurrentUser = async (
     }
 }
 
-// Можно лучше: вынести общую логику получения данных из refresh токена
 const deleteRefreshTokenInUser = async (
     req: Request,
     _res: Response,
@@ -94,7 +89,7 @@ const deleteRefreshTokenInUser = async (
     const rfTkn = cookies[REFRESH_TOKEN.cookie.name]
 
     if (!rfTkn) {
-        throw new UnauthorizedError('Не валидный токен')
+        throw new UnauthorizedError('Invalid token')
     }
 
     const decodedRefreshTkn = jwt.verify(
@@ -103,7 +98,7 @@ const deleteRefreshTokenInUser = async (
     ) as JwtPayload
     const user = await User.findOne({
         _id: decodedRefreshTkn._id,
-    }).orFail(() => new UnauthorizedError('Пользователь не найден в базе'))
+    }).orFail(() => new UnauthorizedError('User not found'))
 
     const rTknHash = crypto
         .createHmac('sha256', REFRESH_TOKEN.secret)
@@ -117,8 +112,6 @@ const deleteRefreshTokenInUser = async (
     return user
 }
 
-// Реализация удаления токена из базы может отличаться
-// GET  /auth/logout
 const logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
         await deleteRefreshTokenInUser(req, res, next)
@@ -135,7 +128,6 @@ const logout = async (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
-// GET  /auth/token
 const refreshAccessToken = async (
     req: Request,
     res: Response,
@@ -165,21 +157,16 @@ const refreshAccessToken = async (
 }
 
 const getCurrentUserRoles = async (
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
 ) => {
     const userId = res.locals.user._id
     try {
-        await User.findById(userId, req.body, {
-            new: true,
-        }).orFail(
-            () =>
-                new NotFoundError(
-                    'Пользователь по заданному id отсутствует в базе'
-                )
+        const user = await User.findById(userId).orFail(
+            () => new NotFoundError('User not found')
         )
-        res.status(200).json(res.locals.user.roles)
+        res.status(200).json(user.roles)
     } catch (error) {
         next(error)
     }
@@ -192,14 +179,18 @@ const updateCurrentUser = async (
 ) => {
     const userId = res.locals.user._id
     try {
-        const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
+        const allowedPayload = {
+            name: sanitizePlainText(req.body.name, 30),
+            phone:
+                typeof req.body.phone === 'string'
+                    ? req.body.phone.trim().slice(0, 20)
+                    : undefined,
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(userId, allowedPayload, {
             new: true,
-        }).orFail(
-            () =>
-                new NotFoundError(
-                    'Пользователь по заданному id отсутствует в базе'
-                )
-        )
+            runValidators: true,
+        }).orFail(() => new NotFoundError('User not found'))
         res.status(200).json(updatedUser)
     } catch (error) {
         next(error)
@@ -215,3 +206,4 @@ export {
     register,
     updateCurrentUser,
 }
+

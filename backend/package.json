@@ -4,10 +4,10 @@
   "description": "< Добавьте описание проекта в свободной форме >",
   "main": "dist/app.js",
   "scripts": {
-    "lint": "npx eslint src/**/*.ts",
+    "lint": "eslint src/**/*.ts",
     "format": "prettier ./src --write",
     "build": "tsc",
-    "dev": "npx nodemon -L src/app.ts ",
+    "dev": "nodemon -L src/app.ts",
     "start": "ts-node src/app.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -44,6 +44,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "md5": "^2.3.0",
     "mime-types": "^2.1.35",

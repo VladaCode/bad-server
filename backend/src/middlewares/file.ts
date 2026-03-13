@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { Request, Express } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { mkdirSync } from 'fs'
@@ -5,6 +6,16 @@ import { join } from 'path'
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
+
+const FILE_MAX_SIZE = 10 * 1024 * 1024
+
+const MIME_EXTENSION_MAP: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpg': 'jpg',
+    'image/jpeg': 'jpeg',
+    'image/gif': 'gif',
+    'image/svg+xml': 'svg',
+}
 
 const storage = multer.diskStorage({
     destination: (
@@ -20,7 +31,6 @@ const storage = multer.diskStorage({
         )
 
         mkdirSync(destinationPath, { recursive: true })
-
         cb(null, destinationPath)
     },
 
@@ -29,28 +39,36 @@ const storage = multer.diskStorage({
         file: Express.Multer.File,
         cb: FileNameCallback
     ) => {
-        cb(null, file.originalname)
+        const extension = MIME_EXTENSION_MAP[file.mimetype]
+        if (!extension) {
+            cb(new Error('Unsupported file type'), '')
+            return
+        }
+
+        cb(null, `${crypto.randomUUID()}.${extension}`)
     },
 })
 
-const types = [
-    'image/png',
-    'image/jpg',
-    'image/jpeg',
-    'image/gif',
-    'image/svg+xml',
-]
+const allowedTypes = Object.keys(MIME_EXTENSION_MAP)
 
 const fileFilter = (
     _req: Request,
     file: Express.Multer.File,
     cb: FileFilterCallback
 ) => {
-    if (!types.includes(file.mimetype)) {
-        return cb(null, false)
+    if (!allowedTypes.includes(file.mimetype)) {
+        cb(new Error('Unsupported file type'))
+        return
     }
 
-    return cb(null, true)
+    cb(null, true)
 }
 
-export default multer({ storage, fileFilter })
+export default multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: FILE_MAX_SIZE,
+        files: 1,
+    },
+})
